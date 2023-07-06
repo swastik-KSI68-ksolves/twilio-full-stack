@@ -1,0 +1,9 @@
+.navDisplay{
+    display: flex;
+    justify-content: flex-end;
+}
+
+.textColor{
+    color: white !important;
+}
+
