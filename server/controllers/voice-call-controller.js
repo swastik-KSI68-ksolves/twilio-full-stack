@@ -1,6 +1,6 @@
-import Twilio from 'twilio';
-import { configurations } from '../app-configs.js';
-import { identityProvider } from '../utils/name-generator.js';
+import Twilio from "twilio";
+import { configurations } from "../app-configs.js";
+import { identityProvider } from "../utils/name-generator.js";
 
 const { VoiceResponse } = Twilio.twiml;
 const isAValidPhoneNumber = (number) => /^[\d\+\-\(\) ]+$/.test(number);
@@ -26,16 +26,16 @@ const generateTokenForP2PCall = async (req, res) => {
 
   return res.status(200).json({
     status: 200,
-    type: 'success',
-    message: 'Got token from API',
+    type: "success",
+    message: "Got token from API",
     data: {
       token,
     },
   });
 };
 
-const voiceResponse = (req, res) => {
-  console.log('into voice responsse');
+const voiceResponse = async (req, res) => {
+  console.log("into voice responsse");
   const toNumberOrClientName = req.body.To;
   const callerId = configurations.twilio_config.twilio_caller_id;
   const twiml = new VoiceResponse();
@@ -47,23 +47,25 @@ const voiceResponse = (req, res) => {
     // This is an outgoing call
 
     // set the callerId
-    const dial = twiml.dial({ callerId });
+    const dial = twiml.dial({ callerId: callerId, record, });
     // Check if the 'To' parameter is a Phone Number or Client Name
     // in order to use the appropriate TwiML noun
     const attr = isAValidPhoneNumber(toNumberOrClientName)
-      ? 'number'
-      : 'client';
-    dial[attr]({}, toNumberOrClientName);
+      ? "number"
+      : "client";
+    // const afterRecord = await twiml.record({
+    //   timeout: 0,
+    //   maxLength: 20,
+    // });
+    // console.log("afterRecord", afterRecord);
+    const afterDial = await dial[attr]({}, toNumberOrClientName);
+    console.log("afterDial", afterDial);
     // https://www.twilio.com/docs/voice/twiml/record
-    twiml.record({
-      finishOnKey: '0',
-      timeout: 2,
-    });
   } else {
-    twiml.say('Thanks for calling!');
+    twiml.say("Thanks for calling!");
   }
 
-  res.set('Content-Type', 'text/xml');
+  res.set("Content-Type", "text/xml");
   const twimlJson = twiml.toString();
   return res.send(twimlJson);
 };
