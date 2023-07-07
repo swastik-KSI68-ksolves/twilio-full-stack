@@ -47,7 +47,7 @@ const voiceResponse = async (req, res) => {
     // This is an outgoing call
 
     // set the callerId
-    const dial = twiml.dial({ callerId: callerId, record, });
+    const dial = twiml.dial({ callerId: callerId, record: true });
     // Check if the 'To' parameter is a Phone Number or Client Name
     // in order to use the appropriate TwiML noun
     const attr = isAValidPhoneNumber(toNumberOrClientName)
