@@ -88,7 +88,7 @@ const CallingTwilio = () => {
     // TODO: fetch token from server
     try {
       const response = await axios.get(
-        "http://localhost:3008/call/voice-p2p-generate-token",
+        "http://localhost:3008/call/generate-token",
         {}
       );
       const token = response.data.data.token;
