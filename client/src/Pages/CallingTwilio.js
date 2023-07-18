@@ -10,7 +10,14 @@ import axios from "axios";
 const CallingTwilio = () => {
   const [inputNumber, setInputNumber] = useState("");
   const [varDevice, setVarDevice] = useState("");
-
+  const [callObject, setCallObject] = useState('');
+  const [cutFalg, setCutFlag] = useState(false)
+  const [callAccept, setCallAccept] = useState(false);
+  const [callRjected, setCallRejected] = useState(false);
+  const [callState, setCallState] = useState(null);
+  const [addCall, setAddCall] = useState("");
+  const [callBtnDisable, setCallBtnDisable] = useState(false);
+  const [callStatus, setCallStatus] = useState(null);
   useEffect(() => {
     setupClientForCall();
   }, []);
@@ -58,20 +65,35 @@ const CallingTwilio = () => {
     if (varDevice) {
       console.log(`Attempting to call ${params.To} ...`);
       const call = await varDevice.connect({ params });
+      setCallObject(call)
+      setCallState('ReadyToCall');
       console.log("call obj", call);
+      console.log(call.on, "call.on");
       call.on("error", (err) => {
         console.log("CALL ERROR OCCURED", err);
       });
       call.on("accept", () => {
         // sendVoiceCall(phoneNumber);
-        console.log("CALL ACCEPTED");
+        setCallAccept(true);
+        setCallState('Connected');
+        setCallBtnDisable(true)
+        console.log("CALL IS OPEN");
       });
       call.on("disconnect", () => {
+        setCallState('Close');
+        setCallBtnDisable(false)
         console.log("CALL DISCONNECTED");
       });
       call.on("cancel", () => {
+        setCallRejected(true);
+        setCallBtnDisable(false)
+        setCallState('Rejected');
         console.log("CALL REJECTED");
       });
+      if (cutFalg) {
+        call.disconnect()
+      }
+
     } else {
       console.log("Unable to make call.");
     }
@@ -126,32 +148,23 @@ const CallingTwilio = () => {
     });
 
     device.on("incoming", handleIncomingCall);
+    device.on('connection.accepted', (connection) => {
+      setAddCall("connected")
+    });
+
+    device.on('connection.disconnect', (connection) => {
+      setAddCall("call disconnected")
+    });
+
+    device.on('connection.error', (connection) => {
+      setAddCall("call error")
+    });
   };
 
   // HANDLE INCOMING CALL
 
   const handleIncomingCall = (call) => {
     console.log(`Incoming call from ${call.parameters.From}`);
-
-    //TODO: show incoming call div and incoming phone number
-
-    //add event listeners for Accept, Reject, and Hangup buttons
-    // incomingCallAcceptButton.onclick = () => {
-    //   acceptIncomingCall(call);
-    // };
-
-    // incomingCallRejectButton.onclick = () => {
-    //   rejectIncomingCall(call);
-    // };
-
-    // incomingCallHangupButton.onclick = () => {
-    //   hangupIncomingCall(call);
-    // };
-
-    // add event listener to call object
-    call.on("cancel", handleDisconnectedIncomingCall);
-    call.on("disconnect", handleDisconnectedIncomingCall);
-    call.on("reject", handleDisconnectedIncomingCall);
   };
 
   // ACCEPT INCOMING CALL
@@ -181,6 +194,41 @@ const CallingTwilio = () => {
     console.log("Incoming call ended.");
   }
 
+  // HANG UP INCOMING CALL
+  const cutCall = () => {
+    callObject.disconnect();
+    console.log("Hanging up incoming call");
+  }
+  // ACCEPT INCOMING CALL
+  const acceptCall = () => {
+    callObject.accept();
+    console.log("Accepted incoming call.");
+  }
+  // REJECT INCOMING CALL
+  const rejectCall = () => {
+    callObject.reject();
+    console.log("Rejected incoming call");
+  }
+  // if (callObject) {
+  //   let statusOfCall = callObject.status();
+  //   console.log(statusOfCall, "****status");
+  // }
+  // useEffect(() => {
+  //   if (callObject) {
+  //     console.log('test call')
+  //     let statusOfCall = callObject.status();
+  //     setCallState(statusOfCall);
+  //     console.log(statusOfCall, "****status");
+  //   }
+  //   console.log({ callObject });
+  // })
+  useEffect(() => {
+    if (callObject) {
+      let callStates = callObject.status();
+      setCallStatus(callStates);
+      console.log(callStates, "++++++++++++++");
+    }
+  })
   return (
     <>
       <Navbar />
@@ -198,12 +246,27 @@ const CallingTwilio = () => {
                   type="number"
                   value={inputNumber}
                   onChange={handleInput}
+                  maxLength="12"
+                  minLength="10"
                   required
                 />
               </InputGroup>
-              <Button variant="primary" type="sunmit">
+              <div>
+                <h3>{callState}</h3>
+                <h3>{callStatus}</h3>
+              </div>
+              <Button variant="primary" type="submit" disabled={callBtnDisable}>
                 Call
               </Button>
+              <Button variant="danger" onClick={() => (cutCall())} className="ms-2">
+                Cut
+              </Button>
+              {/* <Button variant="success" onClick={() => (acceptCall())} className="ms-2">
+                Accept
+              </Button> */}
+              {/* <Button variant="warning" onClick={() => (rejectCall())} className="ms-2">
+                Reject
+              </Button> */}
             </form>
           </Card.Body>
         </Card>
